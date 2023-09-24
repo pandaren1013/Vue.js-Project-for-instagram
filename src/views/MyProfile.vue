@@ -1,130 +1,140 @@
-<!-- Copyright (c) 2022. Davis Tibbz. Github: https://github.com/longwater1234. MIT License  -->
 <template>
-  <h3 class="cart-header">My Profile</h3>
-  <div class="main-view" style="height: 80vh" v-loading="isLoading">
+  <div v-loading="isLoading" class="max-h-[100vh] overflow-scroll" ref="el">
     <!-- START HEADER -->
-    <div class="profile-header">
-      <el-avatar :size="100" :src="attachAvatarLink(store.fullname)" />
-      <p class="username">
-        {{ userInfo.fullname }}
-        <el-icon class="myEdit" @click="showEditDialog()"><Edit /></el-icon>
-      </p>
-      <div class="joined">{{ userInfo.email }}</div>
+    <div class="flex flex-col gap-10 md:gap-0 md:flex-row items-center mb-11 mt-5 ml-[71px]">
+      <img src="@/assets/img/avatar/1.png" alt="avatar" class="w-[150px] mr-[101px] rounded-full" />
+      <div class="flex-col">
+        <div class="flex items-center">
+          <p class="text-3xl">Jennifer</p>
+          <button class="bg-[#0095F6] rounded-[4px] text-xl text-white px-6 py-[6px] ml-5 mr-3">Follow</button>
+          <img src="@/assets/img/posticons/More.svg" alt="Customize" />
+        </div>
+        <div class="flex gap-10 my-5">
+          <p class="text-base font-semibold">1.258 <span class="font-normal">posts</span></p>
+          <p class="text-base font-semibold">4M <span class="font-normal">followers</span></p>
+          <p class="text-base font-semibold">1.250 <span class="font-normal">following</span></p>
+        </div>
+        <p class="text-base font-semibold">Terry Lucas</p>
+      </div>
     </div>
     <!-- END OF HEADER -->
-
-    <div class="summary">
-      <hr />
-      <el-row :gutter="5" justify="space-around">
-        <el-col v-for="item in summaryList" :key="item.title" :span="4">
-          <div class="my-title">{{ toLower(item.title) }}</div>
-          <div class="myvalue">{{ item.value }}</div>
-          <div class="my-sub">{{ item.subtitle }}</div>
-        </el-col>
-      </el-row>
-      <hr />
-    </div>
-    <!-- END OF SUMMARY -->
-
-    <!-- START OF RECENT COURSES -->
-    <div class="recently">
-      <h3 class="serif-head">Your Recent Courses</h3>
-      <div class="recentBox" v-if="courseList.length > 0">
-        <div class="recentSingle" v-for="item in courseList" :key="item.id" @click="goToCourse(item.courseId)">
-          {{ item.title }}
-          <el-progress class="myprogress" :percentage="item.progress" />
-        </div>
-        <div @click="goToLearning()" class="recentSingle linky" v-if="courseList.length > 2">View All</div>
+    <div class="flex ml-12 mb-11 items-baseline">
+      <div v-for="(post, id) in postList" :key="id" class="flex flex-col gap-4 mx-7 my-4 items-center">
+        <img v-if="post.post.type === 'IMAGE'" class="w-full" :src="mediaFun(post)" :alt="post.post.filename" />
+        <video v-else ref="el1" class="m-auto rounded" :src="mediaFun(post)" controls />
+        <p class="text-sm font-semibold">Made Us</p>
       </div>
-      <div v-else class="nodata">No data</div>
     </div>
 
-    <!-- START OF CERTIFICATES -->
-    <div class="recently">
-      <h3 class="serif-head">Your Certificates</h3>
-      <div class="nodata">(TODO: Needs a cloud storage service like AWS S3 or similar)</div>
+    <hr />
+
+    <div class="flex flex-col justify-center gap-[60px] my-4 md:flex-row pt-4">
+      <div
+        @click="getAll"
+        class="flex gap-1.5 items-center cursor-pointer m-auto md:m-0 pt-[17px]"
+        :class="_getAll ? '  border-[#262626] border-t-[1px]' : ''"
+      >
+        <img class="w-8 md:w-3" src="@/assets/img/posticons/Posts.svg" alt="Posts" />
+        <p class="text-5xl md:text-xs font-semibold">POSTS</p>
+      </div>
+      <div
+        @click="getImage"
+        class="flex gap-1.5 items-center cursor-pointer m-auto md:m-0 pt-[17px]"
+        :class="_getImage ? '  border-[#262626] border-t-[1px]' : ''"
+      >
+        <img class="w-8 md:w-3" src="@/assets/img/posticons/Guides.svg" alt="Guides" />
+        <p class="text-5xl md:text-xs font-semibold">PHOTOS</p>
+      </div>
+      <div
+        @click="getVideo"
+        class="flex gap-1.5 items-center cursor-pointer m-auto md:m-0 pt-[17px]"
+        :class="_getVideo ? '  border-[#262626] border-t-[1px]' : ''"
+      >
+        <img class="w-8 md:w-3" src="@/assets/img/posticons/Videos.svg" alt="Videos" />
+        <p class="text-5xl md:text-xs font-semibold">VIDEOS</p>
+      </div>
     </div>
 
-    <!-- EDIT PROFILE DIALOG -->
-    <el-dialog v-model="dialogShow" title="Update your Profile" width="40%">
-      <el-form :model="userInfo" @submit.prevent="updateProfile" size="default">
-        <el-form-item label="Your name">
-          <el-input v-model="userInfo.fullname" type="text" maxlength="70" style="width: 60% !important" />
-        </el-form-item>
-        <el-button type="primary" :loading="formLoading" native-type="submit"> Submit </el-button>
-      </el-form>
-    </el-dialog>
+    <div class="flex items-center">
+      <div v-if="_getImage" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-7">
+        <div v-for="(post, id) in postList.filter(list => list.post.type === 'IMAGE')" :key="id">
+          <img class="w-full" :src="mediaFun(post)" :alt="post.post.filename" />
+        </div>
+      </div>
+      <div v-else-if="_getVideo" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-7">
+        <div v-for="(post, id) in postList.filter(list => list.post.type === 'VIDEO')" :key="id">
+          <video ref="el1" class="m-auto rounded !h-64" :src="mediaFun(post)" controls />
+        </div>
+      </div>
+      <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-7">
+        <div v-for="(post, id) in postList" :key="id">
+          <img v-if="post.post.type === 'IMAGE'" class="w-full" :src="mediaFun(post)" :alt="post.post.filename" />
+          <video v-else ref="el1" class="m-auto rounded !h-64" :src="mediaFun(post)" controls />
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
 <script lang="ts" setup>
-import EnrollService from "@/service/EnrollService";
-import ProfileService from "@/service/ProfileService";
-import type { User } from "@/interfaces/wedemy";
-import { ElMessage } from "element-plus";
-import { Edit } from "@element-plus/icons-vue";
-import { onMounted, reactive, ref } from "vue";
-import type { EnrollmentDto, Summary } from "@/interfaces/custom";
-import { useRouter } from "vue-router";
-import { useStudentStore } from "@/stores";
-import { handleApiError } from "@/util/http_util";
-
-const router = useRouter();
-const store = useStudentStore();
-
+import { watch } from "vue";
+import type { Comment, Post, newPost } from "@/interfaces/custom";
+import { useScroll } from "@vueuse/core";
+import { postStore } from "@/stores";
+import { storeToRefs } from "pinia";
+const poststore = postStore();
+const { postList } = storeToRefs(postStore());
+const _getImage = ref(false);
+const _getVideo = ref(false);
+const _getAll = ref(false);
 const isLoading = ref(true);
-const formLoading = ref(false);
-const dialogShow = ref(false);
-const summaryList = ref<Summary[]>([]);
-const courseList = ref<EnrollmentDto[]>([]);
-const userInfo: Partial<User> = reactive({});
-
-function attachAvatarLink(username: string) {
-  return `https://avatars.dicebear.com/api/initials/${username}.svg`;
-}
+const mediaFun = (post: newPost) => {
+  return `http://192.168.3.42:3009/${post.post.filename}`;
+};
 function getProfileInfo() {
-  ProfileService.getUserDetails().then(res => Object.assign(userInfo, res.data));
-  ProfileService.getUserSummary().then(res => (summaryList.value = res.data));
+  poststore
+    .getPost(pagenum.value, pagecnt.value)
+    .catch(error => error)
+    .finally(() => (isLoading.value = false));
 }
 
+const getAll = () => {
+  _getAll.value = true;
+  _getImage.value = false;
+  _getVideo.value = false;
+};
+const getImage = () => {
+  _getAll.value = false;
+  _getImage.value = true;
+  _getVideo.value = false;
+};
+const getVideo = () => {
+  _getAll.value = false;
+  _getVideo.value = true;
+  _getImage.value = false;
+};
+
+//Pagenation
+const pagenum = ref<number>(1);
+const pagecnt = ref<number>(12);
+
+const el = ref<HTMLElement | null>(null);
+const { arrivedState } = useScroll(el);
+
+watch(arrivedState, value => {
+  if (value.bottom) {
+    isLoading.value = true;
+
+    poststore.getPost(pagenum.value++, pagecnt.value).then(() => (isLoading.value = false));
+  }
+});
+import { onMounted, reactive, ref } from "vue";
 function toLower(item?: string) {
   return String(item).toLowerCase();
 }
-
-function getUserProgress() {
-  EnrollService.getMySummary()
-    .then(res => (courseList.value = res.data))
-    .catch(err => ElMessage.error(err.message))
-    .finally(() => (isLoading.value = false));
-}
-function goToLearning() {
-  router.push("/account/learning");
-}
-
-function showEditDialog() {
-  dialogShow.value = !dialogShow.value;
-}
-
-function updateProfile() {
-  formLoading.value = true;
-  ProfileService.updateMine(userInfo)
-    .then(res => {
-      Object.assign(userInfo, res.data);
-      dialogShow.value = false;
-      store.getLoginStatus();
-      ElMessage.success("Your profile has been updated!");
-    })
-    .catch(err => handleApiError(err));
-}
-
-function goToCourse(id: number) {
-  router.push({ name: "ResumeCourse", params: { courseId: id } });
-}
-
 onMounted(() => {
-  document.title = "My Profile | Wedemy";
+  document.title = "My Profile | Jennifer";
   getProfileInfo();
-  getUserProgress();
 });
 </script>
 

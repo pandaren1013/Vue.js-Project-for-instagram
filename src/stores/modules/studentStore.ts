@@ -5,9 +5,16 @@ import type { UserDto } from "@/interfaces/custom";
 // FOR USER's state
 interface UserState {
   id: number;
-  fullname: string;
+  username: string;
+  email: string;
   loggedIn: boolean;
   cartCount: number;
+  content: string;
+  file: string;
+  type: string;
+  author?: string;
+  like?: number;
+  createdAt?: Date | string;
 }
 
 const useStudentStore = defineStore({
@@ -17,13 +24,20 @@ const useStudentStore = defineStore({
       id: 0,
       cartCount: 0,
       loggedIn: false,
-      fullname: ""
+      email: "",
+      username: "",
+      content: "",
+      file: "",
+      type: "",
+      author: "",
+      like: 0,
+      createdAt: ""
     };
   },
   actions: {
     async getLoginStatus(): Promise<boolean> {
       try {
-        if (this.fullname !== "") {
+        if (this.username !== "") {
           return true;
         }
         const res = await httpUtil.get("/auth/status");
@@ -31,7 +45,7 @@ const useStudentStore = defineStore({
         const user: UserDto = res.data?.userInfo;
         if (user) {
           this.id = user.id;
-          this.fullname = user.fullname;
+          this.username = user.username;
         }
         return this.loggedIn;
       } catch (error: any) {
@@ -50,7 +64,7 @@ const useStudentStore = defineStore({
       }
     },
     async logoutUser() {
-      await httpUtil.post("/logout", null);
+      await httpUtil.post("/auth/logout", null);
       this.$reset();
     }
   },
@@ -62,6 +76,11 @@ const useStudentStore = defineStore({
       return store.loggedIn;
     }
   }
+  // persist: {
+  //   key: 'info',
+  //   // storage: window.localStorage,
+  //   paths: ['loggedIn' ]
+  // }
 });
 
 export default useStudentStore;

@@ -1,19 +1,19 @@
 <!-- Copyright (c) 2022. Davis Tibbz. Github: https://github.com/longwater1234. MIT License  -->
 <template>
-  <div align="center" style="height: 80vh">
+  <div align="center" style="height: 80vh" class="mt-48">
     <div class="loginContainer">
       <h3 class="loginHeader">Login to your Wedemy Account</h3>
 
       <!-- GOOGLE SIGN IN, SEE DOCS  -->
       <!-- https://developers.google.com/identity/gsi/web/guides/display-button -->
-      <div
+      <!-- <div
         id="g_id_onload"
         :data-client_id="GOOGLE_CLIENT_ID"
         data-context="signin"
         data-ux_mode="popup"
         :data-login_uri="SERVER_ROOT + '/oauth2/authorization/google'"
         data-auto_prompt="false"
-      ></div>
+      ></div> -->
 
       <div
         class="g_id_signin"
@@ -84,6 +84,7 @@ import { handleApiError } from "@/util/http_util";
 import type { FormInstance, FormRules } from "element-plus";
 import { useStudentStore } from "@/stores";
 import type { LoginRequest, UserDto } from "@/interfaces/custom";
+import router from "@/router";
 
 document.title = "Login | Wedemy";
 
@@ -112,13 +113,13 @@ const rules = reactive<FormRules>({
 });
 
 const isLoading = ref(false);
-const GOOGLE_CLIENT_ID = computed(() => {
-  return import.meta.env.VITE_APP_GOOGLE_CLIENT_ID;
-});
+// const GOOGLE_CLIENT_ID = computed(() => {
+//   return import.meta.env.VITE_APP_GOOGLE_CLIENT_ID;
+// });
 
-const SERVER_ROOT = computed(() => {
-  return import.meta.env.VITE_APP_BACKEND_ROOT_URL;
-});
+// const SERVER_ROOT = computed(() => {
+//   return import.meta.env.VITE_APP_BACKEND_ROOT_URL;
+// });
 //const HCAPTCHA_KEY = import.meta.env.VITE_APP_HCAPTCHA_CLIENT_KEY,
 
 /** on formSubmit */
@@ -127,32 +128,26 @@ async function handleLogin() {
   if (!isValid) return;
   isLoading.value = true;
   submitToServer(loginForm)
-    .then(() => redirectToHome())
+    .then(response => {
+      if (response.accessToken) {
+        localStorage.setItem("auth_token", response.accessToken);
+      }
+      router.push("/");
+    })
     .catch(error => displayError(error))
     .finally(() => (isLoading.value = false));
 }
 
 async function submitToServer(payload: LoginRequest) {
   let res = await AuthService.loginUser({ ...payload });
-  let user: UserDto = res.data.userInfo;
+  let user: UserDto = res.data;
   store.$patch({
     id: user.id,
-    fullname: user.fullname,
+    email: user.email,
     loggedIn: true
   });
-  await store.getLoginStatus();
-  await store.getCartCountServer();
+  return res.data;
 }
-
-function redirectToHome() {
-  ElMessage.success("Welcome back!");
-  window.location.replace("/");
-}
-
-/** onSuccess captcha solve */
-// function handleVerify(token: string) {
-//   loginForm.responseToken = token;
-// }
 
 function displayError(err: any) {
   handleApiError(err);
@@ -163,19 +158,9 @@ function displayError(err: any) {
 
 function resetCaptcha() {
   loginForm.responseToken = "";
-  //this.$refs.mycaptcha.reset();
 }
 
-onMounted(() => {
-  //attach GoogleAuth script
-  const script = document.createElement("script");
-  script.src = "https://accounts.google.com/gsi/client";
-  script.id = "google_client";
-  document.getElementById("g-login")?.appendChild(script); // see index.html
-});
-
 onBeforeUnmount(() => {
-  //detach above script
   document.getElementById("google_client")?.remove();
 });
 </script>

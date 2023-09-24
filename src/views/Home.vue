@@ -1,151 +1,197 @@
-<!-- Copyright (c) 2022. Davis Tibbz. Github: https://github.com/longwater1234. MIT License  -->
 <template>
-  <div class="home">
-    <div class="banner-image">
-      <div id="header-box">
-        <h2 class="serif-head">Find the right fit</h2>
-        <p>The topics you want, taught by real-world experts. Courses as low as $15.99</p>
-        <form @submit.prevent="handleSearch">
-          <el-input
-            :suffix-icon="Search"
-            native-type="search"
-            v-model="searchItem"
-            maxlength="40"
-            placeholder="Search anything"
-          >
-          </el-input>
-        </form>
-      </div>
+  <!-- <div v-loading="loading"  class="grid grid-cols-1 gap-[29px] lg:grid-cols-3 max-h-[100vh] overflow-scroll" ref="el"> -->
+  <div class="grid grid-cols-1 gap-[29px] lg:grid-cols-3 max-h-[100vh] overflow-scroll scroll-hidden" ref="el">
+    <div class="col-span-1 lg:col-span-2">
+      <PostForm />
+      <vueper-slides
+        :dragging-distance="201"
+        :arrows-outside="false"
+        :visible-slides="7"
+        :gap="4"
+        :slide-ratio="1 / 9"
+        :breakpoints="{ 800: { visibleSlides: 3, slideMultiple: 3 } }"
+        fixed-height="100px"
+        :autoplay="true"
+        :bullets="true"
+      >
+        <vueper-slide
+          class="text-green-600 text-xs p-3 m-[7px] !w-[56px] !h-[56px] outline outline-offset-4 outline-pink-500 rounded-full"
+          v-for="(slide, i) in slides"
+          :key="i"
+          :arrows-outside="false"
+          :arrows="false"
+          :title="slide.title"
+          :content="slide.content"
+          :image="slide.image"
+        />
+      </vueper-slides>
+
+      <PostList v-for="(post, id) in postList" :key="id" :post="post" />
     </div>
-    <!-- end of header banner -->
-
-    <!-- START MAIN BODY -->
-    <div class="main-body">
-      <div v-if="store.getIsLoggedIn" style="margin-bottom: 2em">
-        <h3 class="sub-heading">
-          Hi {{ getFirst(store.fullname) }}! 👋 Pick up where you left off in
-          <router-link to="/account/learning">My Learning</router-link>
-        </h3>
-      </div>
-
-      <h2 class="serif-head">Students are viewing</h2>
-      <h3 class="sub-heading">Expand your skillset with these courses</h3>
-
-      <el-alert v-if="serverError" :title="serverError" type="error" :closable="false" />
-      <!-- 
-      <div ></div> -->
-
-      <div v-loading="isLoading" class="course-box" :style="{ borderRadius: baseRadius }">
-        <el-space direction="vertical" alignment="center" :size="30" style="margin-top: 2%; margin-left: 10%">
-          <!-- START OF SINGLE CARD -->
-          <el-space v-if="courses.length" wrap size="large">
-            <el-card
-              class="courseCard"
-              :body-style="{ padding: '0px' }"
-              shadow="hover"
-              style="margin-bottom: 13px"
-              v-for="course in courses"
-              :key="course.id"
-              @click="router.push(`/course/${course.id}`)"
-            >
-              <img :src="course.thumbUrl" class="product-img" :alt="course.title" />
-              <div style="padding: 14px">
-                <div class="card-title">{{ course.title }}</div>
-                <div class="card-author">
-                  <span>{{ course.author }}</span>
-                </div>
-                <!-- rating from users -->
-                <el-rate
-                  v-model="course.rating"
-                  disabled
-                  show-score
-                  text-color="#ff9900"
-                  score-template="{value} rating"
-                >
-                </el-rate>
-                <div>${{ course.price }}</div>
-              </div>
-            </el-card>
-          </el-space>
-        </el-space>
-      </div>
-      <!-- END OF SINGLE CARD -->
-
-      <h2 class="serif-head">Top Categories</h2>
-      <h3 class="sub-heading">Most Viewed by Students</h3>
-      <div class="catArea">
-        <div class="catSingle" v-for="(item, index) in topCategs" :key="index" @click="goToCategory(item)">
-          {{ item }}
-        </div>
-      </div>
+    <div class="col-span-1">
+      <RightSide :postList="postList" @increase-by="increaseCount" @some-event.once="callback" />
     </div>
   </div>
 </template>
-
 <script lang="ts" setup>
-import CourseService from "@/service/CourseService";
-import type { Course } from "@/interfaces/wedemy";
-import { Search } from "@element-plus/icons-vue";
-import { ElNotification } from "element-plus";
-import { onMounted, reactive, ref } from "vue";
-import { useRouter } from "vue-router";
-import { useStudentStore } from "@/stores";
+import PostList from "@/sections/PostList.vue";
+import PostForm from "@/sections/PostForm.vue";
+import RightSide from "@/sections/RightSide.vue";
+import { useScroll } from "@vueuse/core";
+import moment from "moment";
+import "vue3-canvas-video-player/dist/style.css";
+import { provide, watch, onMounted, reactive, ref, defineProps } from "vue";
+import { postStore } from "@/stores";
+import { storeToRefs } from "pinia";
+import type { FormInstance } from "element-plus";
+const callback = () => {
+  console.log("Emit Success,happen by .once");
+};
+defineProps({
+  postList: {
+    type: Array,
+    required: true
+  }
+});
+// provide('message', 'postList')
+//Emit use exam
+const count = ref(0);
+function increaseCount(n: number) {
+  count.value += n;
+  console.log("increase", count.value);
+}
 
-const router = useRouter();
-const store = useStudentStore();
+const poststore = postStore();
+const { postList } = storeToRefs(postStore());
+const content = ref("");
+import { VueperSlides, VueperSlide } from "vueperslides";
 
-const searchItem = ref("");
-const baseRadius = ref("var(--el-border-radius-base)");
-const courses = ref<Course[]>([]);
-const isLoading = ref(true);
+import "vueperslides/dist/vueperslides.css";
+import a from "@/assets/img/avatar/1.png";
+import b from "@/assets/img/avatar/2.png";
+import c from "@/assets/img/avatar/3.png";
+import d from "@/assets/img/avatar/4.png";
+const slides = [
+  {
+    image: a,
+    title: "aaaaa",
+    content: "baaaab"
+  },
+  {
+    image: b
+    // title: "asefsefa",
+    // content: "baefsfb"
+  },
+  {
+    image: c
+    // title: "aa",
+    // content: "bb"
+  },
+  {
+    image: d
+    // title: "aa",
+    // content: "bb"
+  },
+  {
+    image: a
+  },
+  {
+    image: b
+  },
+  {
+    image: c
+  },
+  {
+    image: d
+  },
+  {
+    image: a
+  },
+  {
+    image: b
+  },
+  {
+    image: c
+  },
+  {
+    image: d
+  }
+];
+
+let unixTime = moment().unix();
+const isLoading = ref(false);
 const topCategs = reactive(["Development", "Music", "PhotoVideo", "Finance"]);
 const serverError = ref("");
-
-function fetchAllCourses() {
-  CourseService.getTop()
-    .then(res => (courses.value = res.data))
-    .catch(error => (serverError.value = error.message))
-    .finally(() => (isLoading.value = false));
+const postFormRef = ref<FormInstance>();
+if (content) {
+  isLoading.value = false;
 }
+const image = ref<File | any>();
+const video = ref<File | any>();
 
-function handleSearch() {
-  if (!searchItem.value) return;
-  if (searchItem.value.trim().length < 4) {
-    return ElNotification({
-      title: "Error",
-      type: "error",
-      duration: 2000,
-      message: "Query too short"
-    });
+const Twitter = ref(false);
+async function submitForm() {
+  Twitter.value = true;
+  const isValid = await postFormRef.value?.validate();
+  if (!isValid) return;
+  const formData = new FormData();
+  if (image.value) {
+    formData.append("file", image.value);
+    formData.append("type", "Image");
   }
-  router.push({
-    name: "SearchResults",
-    query: { q: encodeURI(searchItem.value.trim()) },
-    force: true
-  });
+  if (video.value) {
+    formData.append("file", video.value);
+    formData.append("type", "Video");
+  }
+  if (content) {
+    formData.append("content", content.value);
+  }
+  poststore
+    .postRegister(formData)
+    .then(response => {
+      image.value = "";
+      video.value = "";
+      content.value = "";
+      console.log("asdfasef", response);
+    })
+    .catch(error => error)
+    .finally(() => (loading.value = false));
 }
+const pagenum = ref<number>(1);
+const pagecnt = ref<number>(2);
+const loading = ref<boolean>(true);
+const el = ref<HTMLElement | null>(null);
+const { x, y, isScrolling, arrivedState, directions } = useScroll(el);
 
-// get first name only
-function getFirst(input: string): string {
-  if (!input) return "";
-  return input.split(/\s/)[0];
-}
+watch(arrivedState, value => {
+  if (value.bottom) {
+    loading.value = true;
+    poststore.getPost(pagenum.value++, pagecnt.value).then(() => (loading.value = false));
+  }
+});
 
-function goToCategory(name: string) {
-  router.push(`/category/${name}`);
+function fetchAllPosts() {
+  poststore
+    .getPost(pagenum.value, pagecnt.value)
+    .catch(error => (serverError.value = error.message))
+    .finally(() => (loading.value = false));
 }
 
 onMounted(() => {
-  document.title = "Home | Wedemy";
-  window.scrollTo(0, 0);
-  fetchAllCourses();
+  document.title = "Home | Jennifer";
+  fetchAllPosts();
 });
 </script>
 
 <style>
-.main-body {
+@media (min-width: 480px) {
+  .ss {
+    display: flex;
+  }
+}
+/* .main-body {
   margin: auto;
-  width: 70% !important;
+  width: 80% !important;
   padding: 1em;
 }
 
@@ -161,11 +207,10 @@ onMounted(() => {
 }
 
 .banner-image {
-  height: 20em;
+  height: 10em;
   aspect-ratio: 16 / 9;
   width: 100%;
-  background: url("../assets/avi-richards-unsplash.jpg") center no-repeat;
-  /* background-color: blueviolet; */
+  background-color: blueviolet;
   overflow-x: hidden;
   overflow-y: hidden;
 }
@@ -221,6 +266,37 @@ onMounted(() => {
   color: var(--vt-c-white-soft);
 }
 
+.el-space__item {
+  width: 100% !important;
+}
+.file-upload-form,
+.image-preview {
+  font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+  padding: 20px;
+}
+img.preview {
+  width: 200px;
+  background-color: white;
+  border: 1px solid #ddd;
+  padding: 5px;
+}
+
+.el-carousel__item h3 {
+  color: #475669;
+  opacity: 0.75;
+  line-height: 200px;
+  margin: 0;
+  text-align: center;
+}
+
+.el-carousel__item:nth-child(2n) {
+  background-color: #99a9bf;
+}
+
+.el-carousel__item:nth-child(2n + 1) {
+  background-color: #d3dce6;
+} */
+/* 
 @media screen and (max-width: 770px) {
   #header-box {
     width: 60%;
@@ -237,6 +313,12 @@ onMounted(() => {
   .catArea {
     flex-wrap: nowrap;
     overflow-x: scroll;
+  }
+  
+} */
+@media screen and (min-width: 470px) {
+  .ss-flex-row {
+    flex-direction: row !important;
   }
 }
 </style>

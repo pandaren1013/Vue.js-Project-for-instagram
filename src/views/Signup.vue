@@ -1,9 +1,8 @@
 <!-- Copyright (c) 2022. Davis Tibbz. Github: https://github.com/longwater1234. MIT License  -->
 <template>
-  <div align="center" style="height: 80vh">
+  <div align="center" style="height: 80vh" class="mt-48">
     <div class="loginContainer">
       <h3 class="loginHeader">Sign Up and Start Learning!</h3>
-
       <!-- GOOGLE SIGN UP  -->
       <!-- https://developers.google.com/identity/gsi/web/guides/display-button -->
       <div
@@ -28,10 +27,10 @@
 
       <!-- START SIGNUP FORM -->
       <el-form @submit.prevent="handleSignup" status-icon :model="signupForm" :rules="rules" ref="signupFormRef">
-        <el-form-item style="margin-top: 10px" prop="fullname" required>
+        <el-form-item style="margin-top: 10px" prop="username" required>
           <el-input
             placeholder="Name"
-            v-model="signupForm.fullname"
+            v-model="signupForm.username"
             :prefix-icon="User"
             maxlength="70"
             class="field"
@@ -112,7 +111,7 @@ const router = useRouter();
 const responseToken = ref("");
 // const myCaptcha = ref<VueHcaptcha>();
 
-/* validation for fullname */
+/* validation for username */
 const checkName = (rule: any, value: string, callback: (arg?: Error) => void) => {
   let reg = /[^ \p{Han}0-9a-zA-Z_.'-]/i;
   if (!value) {
@@ -121,7 +120,7 @@ const checkName = (rule: any, value: string, callback: (arg?: Error) => void) =>
   setTimeout(() => {
     if (value.length < 2) {
       callback(new Error("Name is too short"));
-    } else if (reg.test(signupForm.fullname)) {
+    } else if (reg.test(signupForm.username)) {
       callback(new Error("Name contains illegal characters"));
     } else {
       callback();
@@ -155,7 +154,7 @@ const checkRepeatPass = (rule: any, value: string, callback: (arg?: Error) => vo
 };
 
 const signupForm = reactive({
-  fullname: "",
+  username: "",
   email: "",
   password: "",
   confirmPass: ""
@@ -163,7 +162,7 @@ const signupForm = reactive({
 
 // rules for the validation
 const rules = reactive<FormRules>({
-  fullname: [{ validator: checkName, trigger: "blur" }],
+  username: [{ validator: checkName, trigger: "blur" }],
   email: [{ required: true, type: "email", trigger: "blur" }],
   password: [{ validator: checkPassword, trigger: "blur" }],
   confirmPass: [{ validator: checkRepeatPass, trigger: "blur" }]
@@ -183,7 +182,9 @@ function handleSignup() {
     if (!valid) return;
     isLoading.value = true;
     submitToServer(signupForm)
-      .then(() => redirectToLogin())
+      .then(() => {
+        router.push("/login");
+      })
       .catch(err => displayError(err))
       .finally(() => (isLoading.value = false));
   });
@@ -191,18 +192,10 @@ function handleSignup() {
 
 function displayError(err: unknown) {
   handleApiError(err);
-  // setTimeout(() => {
-  //   resetCaptcha();
-  // }, 200);
 }
 
-// function resetCaptcha() {
-//   responseToken.value = "";
-//   mycaptcha.value?.reset();
-// }
-
 const submitToServer = async (payload: typeof signupForm) => {
-  await AuthService.registerUser({ ...payload }, responseToken.value);
+  await AuthService.registerUser({ ...payload });
 };
 
 function redirectToLogin() {
@@ -214,7 +207,6 @@ function redirectToLogin() {
 }
 
 onMounted(() => {
-  //attach GoogleAuth script
   const scripta = document.createElement("script");
   scripta.src = "https://accounts.google.com/gsi/client";
   scripta.id = "google_client";
@@ -222,7 +214,6 @@ onMounted(() => {
 });
 
 onBeforeUnmount(() => {
-  //detach above script
   document.getElementById("google_client")?.remove();
 });
 </script>

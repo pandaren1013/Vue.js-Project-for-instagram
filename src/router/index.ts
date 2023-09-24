@@ -1,99 +1,33 @@
 import type { RouteRecordRaw } from "vue-router";
 import { createRouter, createWebHistory } from "vue-router";
-import Home from "@/views/Home.vue";
 
 const routes: Array<RouteRecordRaw> = [
   {
     path: "/",
     name: "Home",
-    component: Home
+    component: () => import("@/views/Home.vue"),
+    meta: { requireLogin: true }
   },
   {
-    path: "/cart",
-    name: "Cart",
-    component: () => import("@/views/Cart.vue"),
-    meta: { hideFooter: true }
-  },
-  {
-    path: "/login",
-    name: "Login",
-    component: () => import("@/views/Login.vue")
-  },
-  {
-    path: "/signup",
-    name: "SignUp",
-    component: () => import("@/views/Signup.vue")
-  },
-  {
-    path: "/search",
-    name: "SearchResults",
-    component: () => import("@/views/SearchResults.vue")
-  },
-  {
-    path: "/category/:name",
-    name: "Category",
-    component: () => import("@/views/Category.vue")
-  },
-  {
-    path: "/course/:id(\\d+)",
-    name: "Course",
-    component: () => import("@/views/Course.vue")
-  },
-  {
-    path: "/checkout",
-    name: "Checkout",
-    component: () => import("@/views/Checkout.vue"),
-    meta: { requireLogin: true, hideFooter: true }
-  },
-  {
-    path: "/account/profile",
+    path: "/profile",
     name: "Profile",
     component: () => import("@/views/MyProfile.vue"),
     meta: { requireLogin: true }
   },
+
   {
-    path: "/account/wishlist",
-    name: "Wishlist",
-    component: () => import("@/views/Wishlist.vue"),
-    meta: { requireLogin: true, hideFooter: true }
+    path: "/login",
+    name: "Login",
+    component: () => import("@/views/Login.vue"),
+    meta: { hideNavbar: true }
   },
   {
-    path: "/account/learning",
-    name: "MyLearning",
-    component: () => import("@/views/MyLearning.vue"),
-    meta: { requireLogin: true, hideFooter: true }
+    path: "/signup",
+    name: "SignUp",
+    component: () => import("@/views/Signup.vue"),
+    meta: { hideNavbar: true }
   },
-  {
-    path: "/account/purchase-history",
-    name: "PurchaseHistory",
-    component: () => import("@/views/PurchaseHistory.vue"),
-    meta: { requireLogin: true }
-  },
-  {
-    path: "/account/learning/course/:courseId(\\d+)",
-    name: "ResumeCourse",
-    component: () => import("@/views/ResumeCourse.vue"),
-    meta: {
-      hideNavbar: true,
-      hideFooter: true
-    }
-  },
-  {
-    path: "/videoplayer/course/:courseId(\\d+)/lesson/:lessonId",
-    name: "VideoPlayer",
-    component: () => import("@/views/VideoPlayer.vue"),
-    meta: { requireLogin: true }
-  },
-  {
-    path: "/credits",
-    name: "Credits",
-    component: () => import("@/views/Credits.vue")
-  },
-  {
-    path: "/about",
-    name: "About",
-    component: () => import("@/views/About.vue")
-  },
+
   {
     path: "/Error500",
     name: "ServerError",
@@ -117,6 +51,26 @@ const routes: Array<RouteRecordRaw> = [
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes
+});
+
+router.beforeEach((to, from, next) => {
+  let _router = to.matched;
+  if (to.path === "/login" || to.path === "/signup") {
+    if (localStorage.getItem("auth_token")) return next("/");
+    return next();
+  }
+  if (to.meta && !to.meta.requireLogin) {
+    return next();
+  }
+  if (_router.length > 0 && _router.some(route => route.meta.requireLogin)) {
+    if (localStorage.getItem("auth_token")) {
+      next();
+    } else {
+      next("/login");
+    }
+  } else {
+    next();
+  }
 });
 
 export default router;

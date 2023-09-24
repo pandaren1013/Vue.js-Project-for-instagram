@@ -1,7 +1,8 @@
 import axios, { AxiosError } from "axios";
 import { ElMessage } from "element-plus";
 
-const BACKEND_URL = import.meta.env.VITE_APP_BACKEND_ROOT_URL;
+// const BACKEND_URL = import.meta.env.VITE_APP_BACKEND_ROOT_URL;
+export const BACKEND_URL = "http://192.168.3.42:3009";
 
 function getServiceUrl(): string {
   return BACKEND_URL;
@@ -14,8 +15,8 @@ export const httpUtil = axios.create({
     "Content-Type": "application/json;charset=utf-8",
     "X-Requested-With": "XMLHttpRequest"
   },
-  timeout: 15000, // 15 seconds
-  withCredentials: true
+  timeout: 15000 // 15 seconds
+  // withCredentials: true
 });
 
 // global simple Axios error handler
@@ -23,5 +24,5 @@ export function handleApiError(err: AxiosError | unknown) {
   // @ts-ignore
   const msg = err.response?.data?.message ?? err.message;
   ElMessage.error(msg);
-  console.error("AXIOS", msg);
+  // console.error("AXIOS", msg);
 }

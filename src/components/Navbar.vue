@@ -1,32 +1,10 @@
 <template>
-  <div id="nav">
-    <!-- start logo -->
-    <el-row :gutter="20" justify="space-around">
-      <Drawer />
-      <div class="logo-area" @click="goToHome">
-        <img src="@/assets/logo_final_purple.png" alt="Wedemy" class="mylogo" />
+  <div class="h-13 py-2 nav-sticky">
+    <el-row justify="space-between">
+      <div @click="goToHome">
+        <img src="@/assets/img/navbar/Logo.svg" alt="Logo" class="mt-[7px]" />
       </div>
-      <!-- end logo -->
-
-      <!-- start dropdown -->
-      <div class="full-only category">
-        <el-dropdown>
-          <span class="el-dropdown-link">
-            Categories
-            <arrow-down style="width: 1em" />
-          </span>
-          <!-- START DROPDOWN LIST -->
-          <template #dropdown>
-            <el-dropdown-menu>
-              <el-dropdown-item v-for="item in categories" :key="item.id" @click="goToCategory(item.category)">
-                {{ item.category }}
-              </el-dropdown-item>
-            </el-dropdown-menu>
-          </template>
-        </el-dropdown>
-      </div>
-      <!-- end dropdown -->
-
+      <div></div>
       <!-- START SEARCH BAR -->
       <div id="searchBar">
         <form @submit.prevent="handleSearch">
@@ -34,88 +12,76 @@
             :prefix-icon="Search"
             native-type="search"
             clearable
-            maxlength="40"
+            maxlength="30"
             v-model="searchItem"
-            placeholder="What do you want to learn?"
+            placeholder="Search"
           >
           </el-input>
         </form>
       </div>
       <!-- end searchbar -->
-
-      <!-- START CART ICON -->
-      <div class="cartIcon">
-        <router-link to="/cart" title="Cart">
-          <el-badge v-if="store.cartCount > 0" :value="store.cartCount" class="itemCart">
-            <shopping-cart style="width: 2em" />
-          </el-badge>
-          <shopping-cart v-else style="width: 2em" title="Cart" />
-        </router-link>
-      </div>
-
-      <!-- IF NOT LOGGED IN -->
-      <div class="full-only nav-btns" v-if="!store.loggedIn">
-        <router-link to="/login">
-          <el-button class="btn purple">Log in</el-button>
-        </router-link>
-        &nbsp; &nbsp;
-        <router-link to="/signup">
-          <el-button class="btn white">Sign up</el-button>
-        </router-link>
-      </div>
-
       <!-- ELSE -->
-      <div class="full-only" v-else>
-        <el-dropdown>
-          <el-avatar :size="36" style="cursor: pointer" :src="attachAvatarLink(store.fullname)" />
-          <template #dropdown>
-            <el-dropdown-menu>
-              <el-dropdown-item disabled>
-                {{ store.fullname }}
-              </el-dropdown-item>
-              <el-dropdown-item divided />
-              <!-- NAV BAR DROPDOWN -->
-              <el-dropdown-item v-for="item in navMenuList" :key="item.id" @click="router.push(item.url)">
-                {{ item.title }}
-              </el-dropdown-item>
-              <el-dropdown-item @click="logout()">Logout</el-dropdown-item>
-            </el-dropdown-menu>
-          </template>
-        </el-dropdown>
+      <div>
+        <div className="md:hidden flex  justify-end items-center">
+          <el-dropdown>
+            <el-avatar class="!rounded-sm" :size="30" style="cursor: pointer" :src="menu" />
+            <template #dropdown>
+              <el-dropdown-menu>
+                <el-dropdown-item disabled>
+                  {{ store.username }}
+                </el-dropdown-item>
+                <el-dropdown-item divided />
+                <!-- NAV BAR DROPDOWN -->
+                <el-dropdown-item v-for="item in navMenuList" :key="item.id" @click="router.push(item.url)">
+                  {{ item.title }}
+                </el-dropdown-item>
+                <el-dropdown-item @click="logout()">Logout</el-dropdown-item>
+              </el-dropdown-menu>
+            </template>
+          </el-dropdown>
+        </div>
+        <div class="hidden md:flex gap-[22px]">
+          <img src="@/assets/img/navbar/home.svg" alt="home" />
+          <img src="@/assets/img/navbar/flow.svg" alt="flow" />
+          <img src="@/assets/img/navbar/plus.svg" alt="plus" />
+          <img src="@/assets/img/navbar/campass.svg" alt="campass" />
+          <img src="@/assets/img/navbar/heart.svg" alt="heart" />
+          <el-dropdown>
+            <el-avatar :size="30" style="cursor: pointer" :src="avatar" />
+            <template #dropdown>
+              <el-dropdown-menu>
+                <el-dropdown-item disabled>
+                  {{ store.username }}
+                </el-dropdown-item>
+                <el-dropdown-item divided />
+                <!-- NAV BAR DROPDOWN -->
+                <el-dropdown-item v-for="item in navMenuList" :key="item.id" @click="router.push(item.url)">
+                  {{ item.title }}
+                </el-dropdown-item>
+                <el-dropdown-item @click="logout()">Logout</el-dropdown-item>
+              </el-dropdown-menu>
+            </template>
+          </el-dropdown>
+        </div>
       </div>
     </el-row>
   </div>
 </template>
 
 <script lang="ts" setup>
+import menu from "@/assets/img/navbar/menu.png";
 import { ElNotification } from "element-plus";
-import { ShoppingCart, Search, ArrowDown } from "@element-plus/icons-vue";
+import { Search } from "@element-plus/icons-vue";
+import avatar from "@/assets/img/avatar/avatar.png";
 
-import Drawer from "./Drawer.vue";
 import navMenuList from "@/navmenu.json";
 import type { PropType } from "vue";
 import { ref } from "vue";
 import { useStudentStore } from "@/stores";
 import { useRouter } from "vue-router";
-import type { CategoryDto } from "@/interfaces/custom";
-
 const store = useStudentStore();
-
-defineProps({
-  //from App.vue
-  categories: {
-    type: Array as PropType<CategoryDto[]>,
-    required: true
-  }
-});
-
 const searchItem = ref("");
 const router = useRouter();
-
-const attachAvatarLink = (username: string) => {
-  return `https://avatars.dicebear.com/api/initials/${username}.svg`;
-};
-
 const goToHome = () => {
   router.replace({ path: "/", force: true });
 };
@@ -138,16 +104,28 @@ function handleSearch() {
 }
 
 const logout = async () => {
-  await store.logoutUser();
-  await store.getLoginStatus();
-  window.location.replace("/");
+  localStorage.clear();
+  store.$patch({
+    id: 0,
+    email: "",
+    loggedIn: false
+  });
+
+  router.push("/login");
 };
-function goToCategory(name: string) {
-  router.push(`/category/${name}`);
-}
 </script>
 
 <style scoped>
+.nav-sticky {
+  list-style-type: none;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  background-color: rgba(255, 255, 255, 0.8);
+  position: -webkit-sticky; /* Safari */
+  position: sticky;
+  top: 0;
+}
 .logo-area {
   cursor: pointer;
   width: 10em;
